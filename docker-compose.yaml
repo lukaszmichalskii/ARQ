@@ -1,0 +1,17 @@
+services:
+  database:
+    image: postgres
+    ports:
+      - 5432:5432
+    restart: always
+    environment:
+      POSTGRES_USER: arq_admin
+      POSTGRES_PASSWORD: niduc2_arq
+      POSTGRES_DB: arq_database
+  ui:
+    image: adminer
+    restart: always
+    depends_on:
+      - database
+    ports:
+      - 8080:8080
