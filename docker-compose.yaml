@@ -5,9 +5,12 @@ services:
       - 5432:5432
     restart: always
     environment:
-      POSTGRES_USER: arq_admin
-      POSTGRES_PASSWORD: niduc2_arq
-      POSTGRES_DB: arq_database
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      WORKING_DIR: ${WORKING_DIR}
+    volumes:
+      - "${WORKING_DIR}:/var/lib/postgresql/data"
   ui:
     image: adminer
     restart: always
