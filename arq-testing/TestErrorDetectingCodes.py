@@ -1,6 +1,7 @@
 import unittest
 from arq.errorDetectingCodes import *
 
+
 class ParityCheckTest(unittest.TestCase):
 
     def test_packet_encoding(self):
@@ -26,6 +27,7 @@ class ParityCheckTest(unittest.TestCase):
         array = np.array([0])
         self.assertFalse(parity_check_decode(array))
 
+
 class CyclicRedundancyCheckTest(unittest.TestCase):
 
     def test_packet_encoding(self):
@@ -50,7 +52,42 @@ class CyclicRedundancyCheckTest(unittest.TestCase):
         self.assertFalse(crc.check(array))
 
 
+class LongitudinalRedundancyCheckTest(unittest.TestCase):
 
+    def test_packet_encoding(self):
+        lrc = LongitudinalRedundancyCheck()
+        array = np.array([1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1])
+        encoded_correct_array = [
+            np.array([1, 1, 1, 0, 0, 1, 1, 1]),
+            np.array([1, 1, 0, 1, 1, 1, 0, 1]),
+            np.array([0, 0, 1, 1, 1, 0, 0, 1]),
+            np.array([1, 0, 1, 0, 1, 0, 0, 1]),
+            np.array([1, 0, 1, 0, 1, 0, 1, 0])]
+        array = lrc.encode(array)
+        for index in range(0, 5):
+            self.assertTrue((array[index] == encoded_correct_array[index]).all())
+
+    def test_packet_decoding(self):
+        lrc = LongitudinalRedundancyCheck()
+        array = [
+            np.array([1, 1, 1, 0, 0, 1, 1, 1]),
+            np.array([1, 1, 0, 1, 1, 1, 0, 1]),
+            np.array([0, 0, 1, 1, 1, 0, 0, 1]),
+            np.array([1, 0, 1, 0, 1, 0, 0, 1]),
+            np.array([1, 0, 1, 0, 1, 0, 1, 0])]
+        self.assertTrue(lrc.check(array))
+
+        array[0][4] = 1
+        array[3][2] = 1
+        self.assertFalse(lrc.check(array))
+
+        array = [
+            np.array([0, 1, 1, 1, 1]),
+            np.array([0, 1, 1, 1, 1, 0, 0]),
+            np.array([0, 1, 0, 1, 0, 1, 0]),
+            np.array([1, 0, 1, 0, 0, 0, 1]),
+            np.array([1, 1, 1, 1, 0, 0])]
+        self.assertFalse(lrc.check(array))
 
 if __name__ == '__main__':
     unittest.main()

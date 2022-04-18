@@ -87,6 +87,10 @@ class LongitudinalRedundancyCheck:
         return array
 
     def check(self, array: list) -> bool:
+        for ndarray in array:
+            if ndarray.size != self.__block_size:
+                return False
+
         rows_of_array = len(array)
         for column in range(0, self.__block_size):
             number_of_ones = 0
