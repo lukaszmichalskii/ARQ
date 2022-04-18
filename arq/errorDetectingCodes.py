@@ -40,7 +40,7 @@ class CyclicRedundancyCheck:
                 integer_value_of_array = integer_value_of_array ^ integer_value_of_divisor
             integer_value_of_divisor = integer_value_of_divisor >> 1
 
-        crc_code = np.fromstring(np.binary_repr(integer_value_of_array).zfill(3), dtype='S1').astype(int)
+        crc_code = np.fromstring(np.binary_repr(integer_value_of_array).zfill(self.__number_of_bits), dtype='S1').astype(int)
         return np.append(array, crc_code)
 
     def check(self, array: np.ndarray) -> bool:

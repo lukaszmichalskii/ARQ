@@ -37,6 +37,11 @@ class TestCyclicRedundancyCheck(unittest.TestCase):
         correct_array = np.array([1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1])
         self.assertTrue((array == correct_array).all())
 
+        array = np.array([0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1])
+        correct_array = np.array([0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1])
+        array = crc.encode(array)
+        self.assertTrue((array == correct_array).all())
+
     def test_packet_check(self):
         crc = CyclicRedundancyCheck()
         array = np.array([1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1])
