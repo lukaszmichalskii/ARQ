@@ -125,27 +125,29 @@ class FletcherChecksum:
         checksum2 = checksum2 % (2 ** self.__data_block_size)
         checksum1 = np.fromstring(np.binary_repr(checksum1).zfill(8), dtype='S1').astype(int)
         checksum2 = np.fromstring(np.binary_repr(checksum2).zfill(8), dtype='S1').astype(int)
-        array.append(checksum1)
-        array.append(checksum2)
+        checksum = np.concatenate((checksum1, checksum2))
+        array.append(checksum)
         return array
 
     def check(self, array: list) -> bool:
         checksum1, checksum2 = 0, 0
-        rows_of_array = len(array) - 2
+        rows_of_array = len(array) - 1
         for ndarray in array[:rows_of_array]:
             integer_value_of_data_block = ndarray.dot(2 ** np.arange(ndarray.size)[::-1])
             checksum1 += integer_value_of_data_block
             checksum2 += checksum1
 
-        correct_checksum = array[rows_of_array].dot(2 ** np.arange(ndarray.size)[::-1])
+        correct_checksum = array[rows_of_array]
+        correct_checksum = np.split(correct_checksum, 2)
+
+        correct_checksum1 = correct_checksum[0].dot(2 ** np.arange(correct_checksum[0].size)[::-1])
         checksum1 = checksum1 % (2 ** self.__data_block_size)
-        if checksum1 != correct_checksum:
+        if checksum1 != correct_checksum1:
             return False
 
-        rows_of_array += 1
-        correct_checksum = array[rows_of_array].dot(2 ** np.arange(ndarray.size)[::-1])
+        correct_checksum2 = correct_checksum[1].dot(2 ** np.arange(correct_checksum[1].size)[::-1])
         checksum2 = checksum2 % (2 ** self.__data_block_size)
-        if checksum2 != correct_checksum:
+        if checksum2 != correct_checksum2:
             return False
 
         return True

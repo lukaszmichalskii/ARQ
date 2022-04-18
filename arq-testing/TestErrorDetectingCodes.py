@@ -2,7 +2,7 @@ import unittest
 from arq.errorDetectingCodes import *
 
 
-class ParityCheckTest(unittest.TestCase):
+class TestParityCheck(unittest.TestCase):
 
     def test_packet_encoding(self):
         array = np.array([1, 0, 1, 0, 0, 0, 1])
@@ -28,7 +28,7 @@ class ParityCheckTest(unittest.TestCase):
         self.assertFalse(parity_check_decode(array))
 
 
-class CyclicRedundancyCheckTest(unittest.TestCase):
+class TestCyclicRedundancyCheck(unittest.TestCase):
 
     def test_packet_encoding(self):
         crc = CyclicRedundancyCheck()
@@ -52,7 +52,7 @@ class CyclicRedundancyCheckTest(unittest.TestCase):
         self.assertFalse(crc.check(array))
 
 
-class LongitudinalRedundancyCheckTest(unittest.TestCase):
+class TestLongitudinalRedundancyCheck(unittest.TestCase):
 
     def test_packet_encoding(self):
         lrc = LongitudinalRedundancyCheck()
@@ -62,12 +62,13 @@ class LongitudinalRedundancyCheckTest(unittest.TestCase):
             np.array([1, 1, 0, 1, 1, 1, 0, 1]),
             np.array([0, 0, 1, 1, 1, 0, 0, 1]),
             np.array([1, 0, 1, 0, 1, 0, 0, 1]),
-            np.array([1, 0, 1, 0, 1, 0, 1, 0])]
+            np.array([1, 0, 1, 0, 1, 0, 1, 0])
+        ]
         array = lrc.encode(array)
         for index in range(0, 5):
             self.assertTrue((array[index] == encoded_correct_array[index]).all())
 
-    def test_packet_decoding(self):
+    def test_packet_check(self):
         lrc = LongitudinalRedundancyCheck()
         array = [
             np.array([1, 1, 1, 0, 0, 1, 1, 1]),
@@ -86,8 +87,56 @@ class LongitudinalRedundancyCheckTest(unittest.TestCase):
             np.array([0, 1, 1, 1, 1, 0, 0]),
             np.array([0, 1, 0, 1, 0, 1, 0]),
             np.array([1, 0, 1, 0, 0, 0, 1]),
-            np.array([1, 1, 1, 1, 0, 0])]
+            np.array([1, 1, 1, 1, 0, 0])
+        ]
         self.assertFalse(lrc.check(array))
+
+
+class TestFletcherChecksum(unittest.TestCase):
+
+    def test_packet_decoding(self):
+        fch = FletcherChecksum()
+        array = np.array([1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0])
+        array = fch.encode(array)
+
+        encoded_correct_array = [
+            np.array([1, 0, 1, 0, 0, 0, 1, 1]),
+            np.array([1, 1, 0, 0, 1, 0, 0, 0]),
+            np.array([0, 0, 0, 1, 0, 0, 1, 1]),
+            np.array([0, 1, 0, 0, 1, 0, 1, 0]),
+            np.array([0, 1, 0, 1, 1, 0, 0, 0]),
+            np.array([0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0])
+        ]
+
+        for index in range(0, 6):
+            self.assertTrue((array[index] == encoded_correct_array[index]).all())
+
+    def test_packet_check(self):
+        fch = FletcherChecksum()
+        array = [
+            np.array([1, 0, 1, 0, 0, 0, 1, 1]),
+            np.array([1, 1, 0, 0, 1, 0, 0, 0]),
+            np.array([0, 0, 0, 1, 0, 0, 1, 1]),
+            np.array([0, 1, 0, 0, 1, 0, 1, 0]),
+            np.array([0, 1, 0, 1, 1, 0, 0, 0]),
+            np.array([0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0])
+        ]
+        self.assertTrue(fch.check(array))
+
+        array[0][1] = 1
+        array[5][3] = 1
+        self.assertFalse(fch.check(array))
+
+        array = [
+            np.array([1, 0, 1, 0, 0, 0, 1, 1]),
+            np.array([1, 1, 0, 0, 1, 0, 0, 0]),
+            np.array([0, 0, 0, 1, 0, 0]),
+            np.array([0, 1, 0, 0]),
+            np.array([0, 1, 0, 1, 0, 0]),
+            np.array([0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1])
+        ]
+        self.assertFalse(fch.check(array))
+
 
 if __name__ == '__main__':
     unittest.main()
