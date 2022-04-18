@@ -13,20 +13,21 @@ def parity_check_encode(array: np.ndarray) -> np.ndarray:
 
 
 def parity_check_decode(array: np.ndarray) -> bool:
-    number_of_ones = 0
-    for element in array:
-        if element:
-            number_of_ones += 1
-    if number_of_ones % 2 == 0:
-        return True
-    else:
-        return False
+    if array.size > 1:
+        number_of_ones = 0
+        for element in array:
+            if element:
+                number_of_ones += 1
+        if number_of_ones % 2 == 0:
+            return True
+        else:
+            return False
 
 
 class CyclicRedundancyCheck:
     def __init__(self):
         self.__polynomial = np.array([1, 1, 0, 0, 1, 1, 0, 0, 1])
-        self.__number_of_bits = 9
+        self.__number_of_bits = 8
 
     def encode(self, array: np.ndarray) -> np.ndarray:
         data_array = np.append(array, np.full(self.__number_of_bits, 0))
@@ -43,17 +44,20 @@ class CyclicRedundancyCheck:
         return np.append(array, crc_code)
 
     def check(self, array: np.ndarray) -> bool:
-        integer_value_of_array = array.dot(2 ** np.arange(array.size)[::-1])
-        divisor = np.append(self.__polynomial, np.full(array.size - self.__polynomial.size, 0))
-        integer_value_of_divisor = divisor.dot(2**np.arange(divisor.size)[::-1])
+        if array.size > self.__number_of_bits:
+            integer_value_of_array = (array.dot(2 ** np.arange(array.size)[::-1]))
+            divisor = np.append(self.__polynomial, np.full(array.size - self.__polynomial.size, 0))
+            integer_value_of_divisor = divisor.dot(2 ** np.arange(divisor.size)[::-1])
 
-        while integer_value_of_array > (2 ** self.__number_of_bits - 1):
-            if integer_value_of_divisor <= ((2 ** (np.floor(np.log2(integer_value_of_array))+1)) - 1):
-                integer_value_of_array = integer_value_of_array ^ integer_value_of_divisor
-            integer_value_of_divisor = integer_value_of_divisor >> 1
+            while integer_value_of_array > (2 ** self.__number_of_bits - 1):
+                if integer_value_of_divisor <= ((2 ** (np.floor(np.log2(integer_value_of_array)) + 1)) - 1):
+                    integer_value_of_array = integer_value_of_array ^ integer_value_of_divisor
+                integer_value_of_divisor = integer_value_of_divisor >> 1
 
-        if integer_value_of_array == 0:
-            return True
+            if integer_value_of_array == 0:
+                return True
+            else:
+                return False
         else:
             return False
 
@@ -121,7 +125,7 @@ class FletcherChecksum:
         array.append(checksum2)
         return array
 
-    def check(self, array: list)-> bool:
+    def check(self, array: list) -> bool:
         checksum1, checksum2 = 0, 0
         rows_of_array = len(array) - 2
         for ndarray in array[:rows_of_array]:

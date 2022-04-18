@@ -23,6 +23,8 @@ class ParityCheckTest(unittest.TestCase):
 
         array[2] = 1
         self.assertFalse(parity_check_decode(array))
+        array = np.array([0])
+        self.assertFalse(parity_check_decode(array))
 
 class CyclicRedundancyCheckTest(unittest.TestCase):
 
@@ -44,7 +46,7 @@ class CyclicRedundancyCheckTest(unittest.TestCase):
         array[6] = 2
         self.assertFalse(crc.check(array))
 
-        array = np.array([2, 2, 0, 2, 1, 1, 1, 1, 2, 0, 1, 1, 1, 1, 0, 0, 2, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 2])
+        array = np.array([1, 0, 1, 0, 1, 1])
         self.assertFalse(crc.check(array))
 
 
