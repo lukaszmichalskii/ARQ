@@ -138,7 +138,7 @@ class FletcherChecksum:
             checksum2 += checksum1
 
         correct_checksum = array[rows_of_array]
-        correct_checksum = np.split(correct_checksum, 2)
+        correct_checksum = np.array_split(correct_checksum, 2)
 
         correct_checksum1 = correct_checksum[0].dot(2 ** np.arange(correct_checksum[0].size)[::-1])
         checksum1 = checksum1 % (2 ** self.__data_block_size)
