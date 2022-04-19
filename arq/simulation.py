@@ -38,7 +38,9 @@ def channel_transmission(packet: np.ndarray, errorProbability, channelType) -> n
         return bsc(packet)
     if channelType == 2:
         bec = komm.BinaryErasureChannel(errorProbability)
-        return bec(packet)
+        array = bec(packet)
+        array = array[array != 2]
+        return array
     print("Wrong channel type number, returning same values")
     return packet
 
@@ -81,8 +83,7 @@ def simulation(dataLength, packetLength, codeType, errorProbablity, channelType)
             packetSent = channel_transmission(packetEncoded, errorProbablity, channelType)
             if code_check(packetSent, codeType):
                 comparison = packetSent == packetEncoded
-                statement = comparison.all()
-                if statement:
+                if np.array_equal(packetSent, packetEncoded):
                     if counter == 0:
                         packetsSuccessfullysent += 1
                     break
