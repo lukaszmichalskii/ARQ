@@ -2,7 +2,6 @@ from typing import Union
 
 import numpy as np
 import komm
-from numpy import ndarray
 
 import errorDetectingCodes
 
@@ -16,7 +15,7 @@ def split_into_packets(data: np.array, packetLength) -> np.ndarray:
     return packets
 
 
-def encode(packet: np.ndarray, codeType) -> Union[ndarray, list]:
+def encode(packet: np.ndarray, codeType) -> Union[np.ndarray, list]:
     if codeType == 1:
         return errorDetectingCodes.parity_check_encode(packet)
     if codeType == 2:
@@ -32,18 +31,41 @@ def encode(packet: np.ndarray, codeType) -> Union[ndarray, list]:
     return packet
 
 
-def channel_transmission(packet: np.ndarray, errorProbability, channelType) -> np.ndarray:
-    if channelType == 1:
+def channel_transmission(packet: Union[np.ndarray, list], errorProbability, codeType, channelType) -> Union[np.ndarray, list]:
+    if codeType == 1 or codeType == 2:
+        if channelType == 1:
+            bsc = komm.BinarySymmetricChannel(errorProbability)
+            return bsc(packet)
+        if channelType == 2:
+            bec = komm.BinaryErasureChannel(errorProbability)
+            array = bec(packet)
+            array = array[array != 2]
+            return array
+        print("Wrong channel type number, returning same values")
+        return packet
+
+    if codeType == 3 or codeType == 4:
         bsc = komm.BinarySymmetricChannel(errorProbability)
-        return bsc(packet)
-    if channelType == 2:
-        bec = komm.BinaryErasureChannel(errorProbability)
-        return bec(packet)
-    print("Wrong channel type number, returning same values")
+        if channelType == 1:
+            arrays = []
+            for array in packet:
+                arrays.append(bsc(array))
+            return arrays
+        if channelType == 2:
+            bec = komm.BinaryErasureChannel(errorProbability)
+            arrays = []
+            for array in packet:
+                array = bec(array)
+                array = array[array != 2]
+                arrays.append(array)
+            return arrays
+        print("Wrong channel type number, returning same values")
+        return packet
+    print("Wrong code number, returning same values")
     return packet
 
 
-def code_check(packet: np.ndarray, codeType) -> bool:
+def code_check(packet: Union[np.ndarray, list], codeType) -> bool:
     if codeType == 1:
         return errorDetectingCodes.parity_check_decode(packet)
     if codeType == 2:
@@ -55,14 +77,6 @@ def code_check(packet: np.ndarray, codeType) -> bool:
     if codeType == 4:
         fletcher = errorDetectingCodes.FletcherChecksum()
         return fletcher.check(packet)
-
-'''def code_check(packet: list, codeType) -> bool:
-    if codeType == 3:
-        lrc = errorDetectingCodes.LongitudinalRedundancyCheck()
-        return lrc.check(packet)
-    if codeType == 4:
-        fletcher = errorDetectingCodes.FletcherChecksum()
-        return fletcher.check(packet)'''
 
 
 def simulation(dataLength, packetLength, codeType, errorProbablity, channelType):
@@ -78,11 +92,9 @@ def simulation(dataLength, packetLength, codeType, errorProbablity, channelType)
         counter = 0
         while (True):
             packetEncoded = encode(ndarray, codeType)
-            packetSent = channel_transmission(packetEncoded, errorProbablity, channelType)
+            packetSent = channel_transmission(packetEncoded, errorProbablity, codeType, channelType)
             if code_check(packetSent, codeType):
-                comparison = packetSent == packetEncoded
-                statement = comparison.all()
-                if statement:
+                if np.array_equal(packetSent, packetEncoded):
                     if counter == 0:
                         packetsSuccessfullysent += 1
                     break
