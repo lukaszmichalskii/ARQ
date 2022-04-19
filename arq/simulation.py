@@ -1,9 +1,10 @@
 from typing import Union
 
-import numpy as np
 import komm
+from numpy import ndarray
 
-import errorDetectingCodes
+from arq.arq_service.error_detecting_codes.error_detecting_codes import *
+from config import Config
 
 
 def split_into_packets(data: np.array, packetLength) -> np.ndarray:
