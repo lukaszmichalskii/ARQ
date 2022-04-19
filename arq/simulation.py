@@ -1,10 +1,10 @@
 from typing import Union
 
-import numpy as np
 import komm
 from numpy import ndarray
 
-import errorDetectingCodes
+from arq.arq_service.error_detecting_codes.error_detecting_codes import *
+from config import Config
 
 
 def split_into_packets(data: np.array, packetLength) -> np.ndarray:
@@ -18,15 +18,15 @@ def split_into_packets(data: np.array, packetLength) -> np.ndarray:
 
 def encode(packet: np.ndarray, codeType) -> Union[ndarray, list]:
     if codeType == 1:
-        return errorDetectingCodes.parity_check_encode(packet)
+        return parity_check_encode(packet)
     if codeType == 2:
-        crc = errorDetectingCodes.CyclicRedundancyCheck()
+        crc = CyclicRedundancyCheck()
         return crc.encode(packet)
     if codeType == 3:
-        lrc = errorDetectingCodes.LongitudinalRedundancyCheck()
+        lrc = LongitudinalRedundancyCheck()
         return lrc.encode(packet)
     if codeType == 4:
-        fletcher = errorDetectingCodes.FletcherChecksum()
+        fletcher = FletcherChecksum()
         return fletcher.encode(packet)
     print("Wrong code number, returned without encoding")
     return packet
@@ -45,15 +45,15 @@ def channel_transmission(packet: np.ndarray, errorProbability, channelType) -> n
 
 def code_check(packet: np.ndarray, codeType) -> bool:
     if codeType == 1:
-        return errorDetectingCodes.parity_check_decode(packet)
+        return parity_check_decode(packet)
     if codeType == 2:
-        crc = errorDetectingCodes.CyclicRedundancyCheck()
+        crc = CyclicRedundancyCheck()
         return crc.check(packet)
     if codeType == 3:
-        lrc = errorDetectingCodes.LongitudinalRedundancyCheck()
+        lrc = LongitudinalRedundancyCheck()
         return lrc.check(packet)
     if codeType == 4:
-        fletcher = errorDetectingCodes.FletcherChecksum()
+        fletcher = FletcherChecksum()
         return fletcher.check(packet)
 
 '''def code_check(packet: list, codeType) -> bool:
@@ -65,35 +65,48 @@ def code_check(packet: np.ndarray, codeType) -> bool:
         return fletcher.check(packet)'''
 
 
-def simulation(dataLength, packetLength, codeType, errorProbablity, channelType):
-    data = np.random.randint(0, 2, dataLength)
-    packets = split_into_packets(data, packetLength)
+def simulation(data_length, packet_length, error_detecting_method, error_probablity, channel_type):
+    data = np.random.randint(0, 2, data_length)
+    packets = split_into_packets(data, packet_length)
 
     # Simulation outputs
-    packetsSuccessfullysent = 0
-    repeatedPackets = 0
-    undetectedErrors = 0
+    packets_successfully_sent = 0
+    repeated_packets = 0
+    undetected_errors = 0
 
     for ndarray in packets:
         counter = 0
         while (True):
-            packetEncoded = encode(ndarray, codeType)
-            packetSent = channel_transmission(packetEncoded, errorProbablity, channelType)
-            if code_check(packetSent, codeType):
-                comparison = packetSent == packetEncoded
+            packet_encoded = encode(ndarray, error_detecting_method)
+            packet_sent = channel_transmission(packet_encoded, error_probablity, channel_type)
+            if code_check(packet_sent, error_detecting_method):
+                comparison = packet_sent == packet_encoded
                 statement = comparison.all()
                 if statement:
                     if counter == 0:
-                        packetsSuccessfullysent += 1
+                        packets_successfully_sent += 1
                     break
                 else:
                     if counter == 0:
-                        undetectedErrors += 1
+                        undetected_errors += 1
                     break
             else:
                 if counter == 0:
                     counter+=1
-                    repeatedPackets += 1
-    print("Packets successfully sent: ", packetsSuccessfullysent)
-    print("Repeated packets: ", repeatedPackets)
-    print("Undetected errors: ", undetectedErrors)
+                    repeated_packets += 1
+
+    return {"PacketSuccessfullySent": packets_successfully_sent,
+            "RepeatedPackets": repeated_packets,
+            "UndetectedErrors": undetected_errors }
+
+
+if __name__ == '__main__':
+    results = simulation(Config.DATA_LENGTH,
+                         Config.PACKET_LENGTH,
+                         Config.ERROR_DETECTING_METHOD.get("ParityCheck"),
+                         Config.ERROR_PROBABILITY,
+                         Config.CHANNEL_TYPE.get("BinaryErasureChannel"))
+
+    print("Packet successfully sent: {}\nRepeated packets: {}\nUndetected errors: {}".format(results.get("PacketSuccessfullySent"),
+                                                                                             results.get("RepeatedPackets"),
+                                                                                             results.get("UndetectedErrors")))
