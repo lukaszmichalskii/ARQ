@@ -16,97 +16,97 @@ def split_into_packets(data: np.array, packetLength) -> np.ndarray:
     return packets
 
 
-def encode(packet: np.ndarray, codeType) -> Union[ndarray, list]:
+def encode(packet: np.ndarray, codeType) -> Union[np.ndarray, list]:
     if codeType == 1:
-        return parity_check_encode(packet)
+        return errorDetectingCodes.parity_check_encode(packet)
     if codeType == 2:
-        crc = CyclicRedundancyCheck()
+        crc = errorDetectingCodes.CyclicRedundancyCheck()
         return crc.encode(packet)
     if codeType == 3:
-        lrc = LongitudinalRedundancyCheck()
+        lrc = errorDetectingCodes.LongitudinalRedundancyCheck()
         return lrc.encode(packet)
     if codeType == 4:
-        fletcher = FletcherChecksum()
+        fletcher = errorDetectingCodes.FletcherChecksum()
         return fletcher.encode(packet)
     print("Wrong code number, returned without encoding")
     return packet
 
 
-def channel_transmission(packet: np.ndarray, errorProbability, channelType) -> np.ndarray:
-    if channelType == 1:
+def channel_transmission(packet: Union[np.ndarray, list], errorProbability, codeType, channelType) -> Union[np.ndarray, list]:
+    if codeType == 1 or codeType == 2:
+        if channelType == 1:
+            bsc = komm.BinarySymmetricChannel(errorProbability)
+            return bsc(packet)
+        if channelType == 2:
+            bec = komm.BinaryErasureChannel(errorProbability)
+            array = bec(packet)
+            array = array[array != 2]
+            return array
+        print("Wrong channel type number, returning same values")
+        return packet
+
+    if codeType == 3 or codeType == 4:
         bsc = komm.BinarySymmetricChannel(errorProbability)
-        return bsc(packet)
-    if channelType == 2:
-        bec = komm.BinaryErasureChannel(errorProbability)
-        return bec(packet)
-    print("Wrong channel type number, returning same values")
+        if channelType == 1:
+            arrays = []
+            for array in packet:
+                arrays.append(bsc(array))
+            return arrays
+        if channelType == 2:
+            bec = komm.BinaryErasureChannel(errorProbability)
+            arrays = []
+            for array in packet:
+                array = bec(array)
+                array = array[array != 2]
+                arrays.append(array)
+            return arrays
+        print("Wrong channel type number, returning same values")
+        return packet
+    print("Wrong code number, returning same values")
     return packet
 
 
-def code_check(packet: np.ndarray, codeType) -> bool:
+def code_check(packet: Union[np.ndarray, list], codeType) -> bool:
     if codeType == 1:
-        return parity_check_decode(packet)
+        return errorDetectingCodes.parity_check_decode(packet)
     if codeType == 2:
-        crc = CyclicRedundancyCheck()
+        crc = errorDetectingCodes.CyclicRedundancyCheck()
         return crc.check(packet)
-    if codeType == 3:
-        lrc = LongitudinalRedundancyCheck()
-        return lrc.check(packet)
-    if codeType == 4:
-        fletcher = FletcherChecksum()
-        return fletcher.check(packet)
-
-'''def code_check(packet: list, codeType) -> bool:
     if codeType == 3:
         lrc = errorDetectingCodes.LongitudinalRedundancyCheck()
         return lrc.check(packet)
     if codeType == 4:
         fletcher = errorDetectingCodes.FletcherChecksum()
-        return fletcher.check(packet)'''
+        return fletcher.check(packet)
 
 
-def simulation(data_length, packet_length, error_detecting_method, error_probablity, channel_type):
-    data = np.random.randint(0, 2, data_length)
-    packets = split_into_packets(data, packet_length)
+def simulation(dataLength, packetLength, codeType, errorProbablity, channelType):
+    data = np.random.randint(0, 2, dataLength)
+    packets = split_into_packets(data, packetLength)
 
     # Simulation outputs
-    packets_successfully_sent = 0
-    repeated_packets = 0
-    undetected_errors = 0
+    packetsSuccessfullysent = 0
+    repeatedPackets = 0
+    undetectedErrors = 0
 
     for ndarray in packets:
         counter = 0
         while (True):
-            packet_encoded = encode(ndarray, error_detecting_method)
-            packet_sent = channel_transmission(packet_encoded, error_probablity, channel_type)
-            if code_check(packet_sent, error_detecting_method):
-                comparison = packet_sent == packet_encoded
-                statement = comparison.all()
-                if statement:
+            packetEncoded = encode(ndarray, codeType)
+            packetSent = channel_transmission(packetEncoded, errorProbablity, codeType, channelType)
+            if code_check(packetSent, codeType):
+                if np.array_equal(packetSent, packetEncoded):
                     if counter == 0:
-                        packets_successfully_sent += 1
+                        packetsSuccessfullysent += 1
                     break
                 else:
                     if counter == 0:
-                        undetected_errors += 1
+                        undetectedErrors += 1
                     break
             else:
                 if counter == 0:
                     counter+=1
-                    repeated_packets += 1
-
-    return {"PacketSuccessfullySent": packets_successfully_sent,
-            "RepeatedPackets": repeated_packets,
-            "UndetectedErrors": undetected_errors }
-
-
-if __name__ == '__main__':
-    results = simulation(Config.DATA_LENGTH,
-                         Config.PACKET_LENGTH,
-                         Config.ERROR_DETECTING_METHOD.get("ParityCheck"),
-                         Config.ERROR_PROBABILITY,
-                         Config.CHANNEL_TYPE.get("BinaryErasureChannel"))
-
-    print("Packet successfully sent: {}\nRepeated packets: {}\nUndetected errors: {}".format(results.get("PacketSuccessfullySent"),
-                                                                                             results.get("RepeatedPackets"),
-                                                                                             results.get("UndetectedErrors")))
+                    repeatedPackets += 1
+    print("Packets successfully sent: ", packetsSuccessfullysent)
+    print("Repeated packets: ", repeatedPackets)
+    print("Undetected errors: ", undetectedErrors)
