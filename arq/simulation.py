@@ -80,6 +80,17 @@ def code_check(packet: Union[np.ndarray, list], code_type) -> bool:
         return fletcher.check(packet)
 
 
+def check_undetected_errors( original_packet: Union[np.ndarray], delivered_packet: Union[np.ndarray], code_type) -> bool:
+    counter = 0
+    if code_type == 1 or code_type == 2:
+        return np.array_equal(original_packet, delivered_packet)
+    if code_type == 3 or code_type == 4:
+        for array in delivered_packet:
+            if not np.array_equal(original_packet[counter-1], array):
+                return False
+            counter += 1
+
+
 def simulation(data_length, packet_length, code_type, error_probability, channel_type):
     data = np.random.randint(0, 2, data_length)
     packets = split_into_packets(data, packet_length)
@@ -89,13 +100,13 @@ def simulation(data_length, packet_length, code_type, error_probability, channel
     repeated_packets = 0
     undetected_errors = 0
 
-    for ndarray in packets:
+    for array in packets:
         counter = 0
         while (True):
-            packetEncoded = encode(ndarray, code_type)
-            packetSent = channel_transmission(packetEncoded, error_probability, code_type, channel_type)
-            if code_check(packetSent, code_type):
-                if np.array_equal(packetSent, packetEncoded):
+            packet_encoded = encode(array, code_type)
+            packet_sent = channel_transmission(packet_encoded, error_probability, code_type, channel_type)
+            if code_check(packet_sent, code_type):
+                if check_undetected_errors(packet_encoded, packet_sent, code_type):
                     if counter == 0:
                         packets_successfully_sent += 1
                     break
