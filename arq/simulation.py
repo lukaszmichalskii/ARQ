@@ -86,9 +86,10 @@ def check_undetected_errors( original_packet: Union[np.ndarray], delivered_packe
         return np.array_equal(original_packet, delivered_packet)
     if code_type == 3 or code_type == 4:
         for array in delivered_packet:
-            if not np.array_equal(original_packet[counter-1], array):
+            if not np.array_equal(original_packet[counter], array):
                 return False
             counter += 1
+        return True
 
 
 def simulation(data_length, packet_length, code_type, error_probability, channel_type):
